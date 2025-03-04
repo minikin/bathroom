@@ -15,3 +15,35 @@ rand = "0.9.0"
 
 [dev-dependencies]
 criterion = "0.5.1"
+
+[lints.rust]
+missing-debug-implementations = "warn"
+warnings = "deny"
+let_underscore_drop = "deny"
+non_ascii_idents = "deny"
+single_use_lifetimes = "deny"
+trivial_casts = "deny"
+trivial_numeric_casts = "deny"
+
+[lints.clippy]
+pedantic = { level = "deny", priority = -1 }
+arithmetic_side_effects = "deny"
+exit = "deny"
+expect_used = "deny"
+get_unwrap = "deny"
+index_refutable_slice = "deny"
+indexing_slicing = "deny"
+match_on_vec_items = "deny"
+match_wild_err_arm = "deny"
+missing_docs_in_private_items = "deny"
+missing_panics_doc = "deny"
+option-if-let-else = "warn"
+panic = "deny"
+redundant-clone = "warn"
+string_slice = "deny"
+todo = "deny"
+unchecked_duration_subtraction = "deny"
+unimplemented = "deny"
+unreachable = "deny"
+unwrap_used = "deny"
+use-self = "deny"
