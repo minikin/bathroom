@@ -67,7 +67,7 @@ where
     /// Creates a new `ElasticHashMap` with the default initial capacity and parameters
     #[must_use]
     pub fn new() -> Self {
-        Self::with_capacity(16)
+        Self::with_capacity(64)
     }
 
     /// Creates a new `ElasticHashMap` with the specified initial capacity
@@ -97,7 +97,7 @@ where
     #[allow(clippy::cast_possible_truncation)]
     fn get_index<Q: ?Sized + Hash>(&self, key: &Q) -> usize {
         let hash = self.hash(key);
-        (hash as usize) & (self.buckets.len() - 1)
+        (hash as usize) & (self.buckets.len().saturating_sub(1))
     }
 
     /// Insert a key-value pair into the hash table
@@ -113,7 +113,7 @@ where
         let result = self.insert_at(index, key, value);
 
         if result.is_none() {
-            self.size += 1;
+            self.size = self.size.saturating_add(1);
         }
 
         result
@@ -124,7 +124,7 @@ where
         let bucket_count = self.buckets.len();
         let mut index = start_index;
         let mut step_size = self.min_step_size;
-        let mut consecutive_occupied = 0;
+        let mut consecutive_occupied: usize = 0;
         let mut first_tombstone = None;
 
         // Elastic probing loop
@@ -169,17 +169,17 @@ where
                         // Decrease step size when finding deleted slots or empty spaces
                         step_size = (step_size / 2).max(self.min_step_size);
                     } else {
-                        consecutive_occupied += 1;
+                        consecutive_occupied = consecutive_occupied.saturating_add(1);
                         if consecutive_occupied > self.occupancy_threshold {
                             // Increase step size exponentially when encountering many occupied slots
-                            step_size = (step_size * 2).min(self.max_step_size);
+                            step_size = (step_size.saturating_mul(2)).min(self.max_step_size);
                         }
                     }
                 }
             }
 
             // Compute next index with the current step size
-            index = (index + step_size) & (bucket_count - 1);
+            index = (index.saturating_add(step_size)) & (bucket_count.saturating_sub(1));
         }
 
         // If we get here, we've probed all slots and couldn't find a place
@@ -207,7 +207,7 @@ where
         let bucket_count = self.buckets.len();
         let mut index = start_index;
         let mut step_size = self.min_step_size;
-        let mut consecutive_occupied = 0;
+        let mut consecutive_occupied: usize = 0;
 
         // Elastic probing loop (for retrieval)
         for _ in 0..bucket_count {
@@ -228,17 +228,17 @@ where
                         // Decrease step size when finding deleted slots
                         step_size = (step_size / 2).max(self.min_step_size);
                     } else {
-                        consecutive_occupied += 1;
+                        consecutive_occupied = consecutive_occupied.saturating_add(1);
                         if consecutive_occupied > self.occupancy_threshold {
                             // Increase step size exponentially when encountering many occupied slots
-                            step_size = (step_size * 2).min(self.max_step_size);
+                            step_size = (step_size.saturating_mul(2)).min(self.max_step_size);
                         }
                     }
                 }
             }
 
             // Compute next index with current step size
-            index = (index + step_size) & (bucket_count - 1);
+            index = (index.saturating_add(step_size)) & (bucket_count.saturating_sub(1));
         }
 
         // If we get here, we've probed all slots and couldn't find the key
@@ -264,7 +264,7 @@ where
         let bucket_count = self.buckets.len();
         let mut index = start_index;
         let mut step_size = self.min_step_size;
-        let mut consecutive_occupied = 0;
+        let mut consecutive_occupied: usize = 0;
 
         // Elastic probing loop
         for _ in 0..bucket_count {
@@ -290,16 +290,16 @@ where
                         // Decrease step size when finding deleted slots
                         step_size = (step_size / 2).max(self.min_step_size);
                     } else {
-                        consecutive_occupied += 1;
+                        consecutive_occupied = consecutive_occupied.saturating_add(1);
                         if consecutive_occupied > self.occupancy_threshold {
-                            step_size = (step_size * 2).min(self.max_step_size);
+                            step_size = (step_size.saturating_mul(2)).min(self.max_step_size);
                         }
                     }
                 }
             }
 
             // Advance to next position
-            index = (index + step_size) & (bucket_count - 1);
+            index = (index.saturating_add(step_size)) & (bucket_count.saturating_sub(1));
         }
 
         None
@@ -324,7 +324,7 @@ where
         let bucket_count = self.buckets.len();
         let mut index = start_index;
         let mut step_size = self.min_step_size;
-        let mut consecutive_occupied = 0;
+        let mut consecutive_occupied: usize = 0;
 
         // Elastic probing loop (for removal)
         for _ in 0..bucket_count {
@@ -337,7 +337,7 @@ where
                     // If the key matches and it's not deleted, remove it
                     if !bucket.deleted && bucket.key.borrow() == key {
                         bucket.deleted = true;
-                        self.size -= 1;
+                        self.size = self.size.saturating_sub(1);
                         return Some(bucket.value.clone());
                     }
 
@@ -347,17 +347,17 @@ where
                         // Decrease step size when finding deleted slots
                         step_size = (step_size / 2).max(self.min_step_size);
                     } else {
-                        consecutive_occupied += 1;
+                        consecutive_occupied = consecutive_occupied.saturating_add(1);
                         if consecutive_occupied > self.occupancy_threshold {
                             // Increase step size exponentially when encountering many occupied slots
-                            step_size = (step_size * 2).min(self.max_step_size);
+                            step_size = (step_size.saturating_mul(2)).min(self.max_step_size);
                         }
                     }
                 }
             }
 
             // Compute next index with current step size
-            index = (index + step_size) & (bucket_count - 1);
+            index = (index.saturating_add(step_size)) & (bucket_count.saturating_sub(1));
         }
 
         // If we get here, we've probed all slots and couldn't find the key
@@ -378,7 +378,7 @@ where
 
     /// Resizes the hash table when it gets too full
     fn resize(&mut self) {
-        let new_capacity = self.buckets.len() * 2;
+        let new_capacity = self.buckets.len().saturating_mul(2);
         let mut new_table = Self {
             buckets: vec![None; new_capacity],
             size: 0,
@@ -454,12 +454,12 @@ impl<'a, K, V> Iterator for Iter<'a, K, V> {
     fn next(&mut self) -> Option<Self::Item> {
         while self.index < self.buckets.len() {
             if let Some(bucket) = &self.buckets[self.index] {
-                self.index += 1;
+                self.index = self.index.saturating_add(1);
                 if !bucket.deleted {
                     return Some((&bucket.key, &bucket.value));
                 }
             } else {
-                self.index += 1;
+                self.index = self.index.saturating_add(1);
             }
         }
         None

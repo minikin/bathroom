@@ -61,6 +61,22 @@ enum InsertResult<V> {
     Failed,
 }
 
+#[allow(clippy::missing_fields_in_debug)]
+impl<K, V> std::fmt::Debug for AtomicBucket<K, V> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let state = self.state.load(std::sync::atomic::Ordering::Relaxed);
+        let bucket_state = match state {
+            0 => "Empty",
+            1 => "Occupied",
+            2 => "Deleted",
+            3 => "Locked",
+            _ => "Unknown",
+        };
+
+        f.debug_struct("AtomicBucket").field("state", &bucket_state).finish_non_exhaustive()
+    }
+}
+
 // Make UnsafeCell safe to share between threads
 unsafe impl<K, V> Sync for AtomicBucket<K, V> {}
 
@@ -169,11 +185,13 @@ where
     /// Inserts a key-value pair starting from the specified index
     fn insert_at(&self, start_index: usize, key: K, value: V) -> InsertResult<V> {
         let bucket_count = self.buckets.len();
-        let mut index = start_index;
-        let mut step_size = self.min_step_size.load(Ordering::Relaxed);
-        let mut consecutive_occupied = 0;
         let occupancy_threshold = self.occupancy_threshold.load(Ordering::Relaxed);
         let max_step_size = self.max_step_size.load(Ordering::Relaxed);
+        let min_step_size = self.min_step_size.load(Ordering::Relaxed);
+
+        let mut index = start_index;
+        let mut step_size: usize = min_step_size;
+        let mut consecutive_occupied: usize = 0;
 
         let mut first_tombstone = None;
 
@@ -202,7 +220,7 @@ where
                     consecutive_occupied = 0;
 
                     // Decrease step size when finding deleted slots
-                    step_size = (step_size / 2).max(self.min_step_size.load(Ordering::Relaxed));
+                    step_size = (step_size / 2).max(min_step_size);
                 }
 
                 // Occupied slot
@@ -229,10 +247,10 @@ where
                     }
 
                     // Elastic step size adjustment
-                    consecutive_occupied += 1;
+                    consecutive_occupied = consecutive_occupied.saturating_add(1);
                     if consecutive_occupied > occupancy_threshold {
                         // Increase step size exponentially when encountering many occupied slots
-                        step_size = (step_size * 2).min(max_step_size);
+                        step_size = step_size.saturating_mul(2).min(max_step_size);
                     }
                 }
 
@@ -240,12 +258,12 @@ where
                 BucketState::Locked => {
                     // In a true lock-free implementation, we would use a retry mechanism
                     // or a helping pattern, but for simplicity we'll just continue probing
-                    consecutive_occupied += 1;
+                    consecutive_occupied = consecutive_occupied.saturating_add(1);
                 }
             }
 
             // Compute next index with the current step size
-            index = (index + step_size) & (bucket_count - 1);
+            index = index.saturating_add(step_size) & (bucket_count.saturating_sub(1));
         }
 
         // If we reach here, the table is likely full or all buckets are locked
@@ -294,11 +312,13 @@ where
         Q: Hash + Eq + ?Sized,
     {
         let bucket_count = self.buckets.len();
-        let mut index = start_index;
-        let mut step_size = self.min_step_size.load(Ordering::Relaxed);
-        let mut consecutive_occupied = 0;
         let occupancy_threshold = self.occupancy_threshold.load(Ordering::Relaxed);
         let max_step_size = self.max_step_size.load(Ordering::Relaxed);
+        let min_step_size = self.min_step_size.load(Ordering::Relaxed);
+
+        let mut index = start_index;
+        let mut step_size: usize = min_step_size;
+        let mut consecutive_occupied: usize = 0;
 
         // Elastic probing loop (for retrieval)
         for _ in 0..bucket_count {
@@ -319,21 +339,21 @@ where
                     }
 
                     // Elastic step size adjustment
-                    consecutive_occupied += 1;
+                    consecutive_occupied = consecutive_occupied.saturating_add(1);
                     if consecutive_occupied > occupancy_threshold {
-                        step_size = (step_size * 2).min(max_step_size);
+                        step_size = step_size.saturating_mul(2).min(max_step_size);
                     }
                 }
 
                 // Deleted slot or locked slot - continue probing
                 BucketState::Deleted | BucketState::Locked => {
                     consecutive_occupied = 0;
-                    step_size = (step_size / 2).max(self.min_step_size.load(Ordering::Relaxed));
+                    step_size = (step_size / 2).max(min_step_size);
                 }
             }
 
             // Compute next index with current step size
-            index = (index + step_size) & (bucket_count - 1);
+            index = index.saturating_add(step_size) & (bucket_count.saturating_sub(1));
         }
 
         // If we get here, we've probed all slots and couldn't find the key
@@ -358,11 +378,13 @@ where
         Q: Hash + Eq + ?Sized,
     {
         let bucket_count = self.buckets.len();
-        let mut index = start_index;
-        let mut step_size = self.min_step_size.load(Ordering::Relaxed);
-        let mut consecutive_occupied = 0;
         let occupancy_threshold = self.occupancy_threshold.load(Ordering::Relaxed);
         let max_step_size = self.max_step_size.load(Ordering::Relaxed);
+        let min_step_size = self.min_step_size.load(Ordering::Relaxed);
+
+        let mut index = start_index;
+        let mut step_size: usize = min_step_size;
+        let mut consecutive_occupied: usize = 0;
 
         // Elastic probing loop (for removal)
         for _ in 0..bucket_count {
@@ -394,21 +416,21 @@ where
                     }
 
                     // Elastic step size adjustment
-                    consecutive_occupied += 1;
+                    consecutive_occupied = consecutive_occupied.saturating_add(1);
                     if consecutive_occupied > occupancy_threshold {
-                        step_size = (step_size * 2).min(max_step_size);
+                        step_size = step_size.saturating_mul(2).min(max_step_size);
                     }
                 }
 
                 // Deleted slot or locked slot - continue probing
                 BucketState::Deleted | BucketState::Locked => {
                     consecutive_occupied = 0;
-                    step_size = (step_size / 2).max(self.min_step_size.load(Ordering::Relaxed));
+                    step_size = (step_size / 2).max(min_step_size);
                 }
             }
 
             // Compute next index with current step size
-            index = (index + step_size) & (bucket_count - 1);
+            index = index.saturating_add(step_size) & (bucket_count.saturating_sub(1));
         }
 
         // If we get here, we've probed all slots and couldn't find the key
@@ -426,20 +448,24 @@ where
     }
     /// Resizes the hash table when it gets too full
     fn resize(&self) {
-        // First check if another thread is already doing a resize
-        // by comparing the load factor with the threshold
         let size = self.size.load(Ordering::Relaxed);
         let bucket_count = self.buckets.len();
-        let load_factor_threshold =
-            self.load_factor_threshold.load(Ordering::Relaxed) as f64 / 100.0;
 
-        if (size as f64) / (bucket_count as f64) < load_factor_threshold {
+        // Convert to u64 first to avoid precision loss on 64-bit platforms
+        let size_u64 = size as u64;
+        let bucket_count_u64 = bucket_count as u64;
+        let load_factor_threshold_u64 = (self.load_factor_threshold.load(Ordering::Relaxed) as u64)
+            .saturating_mul(bucket_count_u64)
+            .saturating_div(100);
+
+        // Compare using integer arithmetic instead of floating point
+        if size_u64 < load_factor_threshold_u64 {
             // Another thread probably already resized, so return
             return;
         }
 
         // Create a new, larger hash table
-        let new_capacity = bucket_count * 2;
+        let new_capacity = bucket_count.saturating_mul(2);
         let new_table = Self::with_capacity(new_capacity);
 
         // Copy configuration
@@ -495,7 +521,17 @@ where
 
     /// Returns the current load factor of the map
     pub fn load_factor(&self) -> f64 {
-        (self.size.load(Ordering::Relaxed) as f64) / (self.buckets.len() as f64)
+        // This is only used for informational purposes, so the precision loss is acceptable
+        let size = self.size.load(Ordering::Relaxed);
+        let bucket_count = self.buckets.len();
+
+        if bucket_count == 0 {
+            return 0.0;
+        }
+
+        let percentage = size.saturating_mul(100);
+        let final_percentage = percentage.saturating_div(bucket_count);
+        (final_percentage as f64) / 100.0
     }
 
     /// Inserts a key-value pair into the map
@@ -523,7 +559,7 @@ where
 }
 
 /// Iterator over the key-value pairs of the lock-free hash table
-#[allow(missing_debug_implementations)]
+#[derive(Debug)]
 pub struct Iter<'a, K, V> {
     /// Reference to the buckets in the map
     buckets: &'a [AtomicBucket<K, V>],
@@ -533,7 +569,7 @@ pub struct Iter<'a, K, V> {
     _marker: PhantomData<&'a (K, V)>,
 }
 
-#[allow(single_use_lifetimes)]
+#[allow(clippy::needless_lifetimes, single_use_lifetimes)]
 impl<'a, K, V> Iterator for Iter<'a, K, V>
 where
     K: Clone,
@@ -544,10 +580,10 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         while self.index < self.buckets.len() {
             let Some(bucket) = self.buckets.get(self.index) else {
-                self.index += 1;
+                self.index = self.index.saturating_add(1);
                 continue;
             };
-            self.index += 1;
+            self.index = self.index.saturating_add(1);
 
             if bucket.get_state() == BucketState::Occupied {
                 if let Some(data) = bucket.get_data() {
@@ -556,6 +592,20 @@ where
             }
         }
         None
+    }
+}
+
+#[allow(single_use_lifetimes)]
+impl<'a, K, V> IntoIterator for &'a ConcurrentElasticMap<K, V>
+where
+    K: Clone + Eq + Hash,
+    V: Clone,
+{
+    type Item = (K, V);
+    type IntoIter = Iter<'a, K, V>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
     }
 }
 
