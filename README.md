@@ -1,5 +1,14 @@
 # Bathroom
 
+> **⚠️ IMPORTANT NOTICE:**
+> 
+> - **Status**: This project is currently a work in progress (WIP) and highly experimental
+> - **Production Readiness**: Not recommended for production use at this moment
+> - **Development Timeline**: Ongoing development with no specific timeframe for production readiness
+> - **Current Limitations**: Performance testing incomplete, API may change significantly
+> - **Usage**: Recommended for research, experimentation, and feedback only
+> - **Progress**: Track development on the [Issues](https://github.com/username/bathroom/issues) page
+
 A Rust implementation of the Bathroom Model for hash map optimization, 
 featuring adaptive probing strategies inspired by real-world bathroom stall selection behavior.
 
@@ -19,7 +28,7 @@ featuring adaptive probing strategies inspired by real-world bathroom stall sele
   - [Future Work](#future-work)
   - [References](#references)
   - [Contributing](#contributing)
-  - [License](#license)
+      - [License](#license)
 
 ## Overview
 
@@ -161,12 +170,20 @@ Both implementations offer configuration options to tune performance:
 let mut map = ElasticHashMap::new();
 map.set_load_factor_threshold(80);  // Set maximum load factor to 80%
 map.set_occupancy_threshold(3);     // Set consecutive occupancy threshold to 3
+map.set_step_size_range(2, 128);    // Configure min and max step sizes
 
 // For ConcurrentElasticMap
 let map = ConcurrentElasticMap::new();
 map.set_load_factor_threshold(0.8); // Set maximum load factor to 80%
 map.set_occupancy_threshold(3);     // Set consecutive occupancy threshold to 3
+map.set_step_size_range(2, 128);    // Configure min and max step sizes
 ```
+
+Tuning these parameters can significantly impact performance based on your specific workload:
+
+- **Higher load factor**: Uses memory more efficiently but might increase collision rate
+- **Lower occupancy threshold**: More aggressive step size growth, better for highly clustered data
+- **Wider step size range**: Allows more flexibility in probe sequences, better for large tables
 
 ## Implementation Details
 
@@ -185,19 +202,21 @@ map.set_occupancy_threshold(3);     // Set consecutive occupancy threshold to 3
 
 ## References
 
-1. Wang, Q. (2025). "The Bathroom Model: A Realistic Approach to Hash Table Algorithm Optimization." Vanderbilt University.
-2. Farach-Colton, M., Krapivin, A., & Kuszmaul, W. (2025). "Optimal Bounds for Open Addressing Without Reordering." arXiv:2501.02305v1.
+1. [Wang, Q. (2025). "The Bathroom Model: A Realistic Approach to Hash Table Algorithm Optimization." Vanderbilt University.](https://arxiv.org/abs/2502.10977)
+2. [Farach-Colton, M., Krapivin, A., & Kuszmaul, W. (2025). "Optimal Bounds for Open Addressing Without Reordering." arXiv:2501.02305v1.](https://arxiv.org/abs/2501.02305)
 
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
-## License
+<br>
 
-This project is dual-licensed under either:
+#### License
 
-- MIT License
-- Apache License, Version 2.0
+<sup>
+Licensed under either of <a href="LICENSE-APACHE">Apache License, Version
+2.0</a> or <a href="LICENSE-MIT">MIT license</a> at your option.
+</sup>
 
-at your option.
+<br>
 
