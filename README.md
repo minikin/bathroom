@@ -28,7 +28,7 @@ featuring adaptive probing strategies inspired by real-world bathroom stall sele
   - [Future Work](#future-work)
   - [References](#references)
   - [Contributing](#contributing)
-      - [License](#license)
+  - [License](#license)
 
 ## Overview
 
@@ -55,7 +55,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-bathroom = "0.1.0"
+bathroom = "0.0.1"
 ```
 
 ## Usage
@@ -209,14 +209,10 @@ Tuning these parameters can significantly impact performance based on your speci
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
-<br>
+## License
 
-#### License
-
-<sup>
 Licensed under either of <a href="LICENSE-APACHE">Apache License, Version
 2.0</a> or <a href="LICENSE-MIT">MIT license</a> at your option.
-</sup>
 
 <br>
 
