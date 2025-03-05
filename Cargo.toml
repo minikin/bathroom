@@ -1,6 +1,6 @@
 [package]
 name = "bathroom"
-version = "0.1.0"
+version = "0.0.1"
 edition = "2024"
 authors = ["Oleksandr Prokhorenko <warbles.lieu_04@icloud.com>"]
 description = "Implementation of the Bathroom Model hash table algorithm"
