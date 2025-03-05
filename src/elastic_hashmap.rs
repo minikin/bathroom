@@ -101,6 +101,7 @@ where
     }
 
     /// Insert a key-value pair into the hash table
+    #[allow(clippy::arithmetic_side_effects, clippy::cast_precision_loss)]
     pub fn insert(&mut self, key: K, value: V) -> Option<V> {
         // Check if we need to resize
         if (self.size as f64) / (self.buckets.len() as f64)
@@ -211,12 +212,12 @@ where
 
         // Elastic probing loop (for retrieval)
         for _ in 0..bucket_count {
-            match &self.buckets[index] {
-                // Found an empty slot (and not a tombstone), the key is not in the table
-                None => return None,
+            match self.buckets.get(index) {
+                // Empty slot or None bucket, the key is not in the table
+                None | Some(None) => return None,
 
                 // Found a bucket with data
-                Some(bucket) => {
+                Some(Some(bucket)) => {
                     // If the key matches and it's not deleted, return the value
                     if !bucket.deleted && bucket.key.borrow() == key {
                         return Some(&bucket.value);
@@ -241,7 +242,6 @@ where
             index = (index.saturating_add(step_size)) & (bucket_count.saturating_sub(1));
         }
 
-        // If we get here, we've probed all slots and couldn't find the key
         None
     }
 
@@ -328,12 +328,12 @@ where
 
         // Elastic probing loop (for removal)
         for _ in 0..bucket_count {
-            match &mut self.buckets[index] {
+            match self.buckets.get_mut(index) {
                 // Found an empty slot (and not a tombstone), the key is not in the table
-                None => return None,
+                None | Some(None) => return None,
 
                 // Found a bucket with data
-                Some(bucket) => {
+                Some(Some(bucket)) => {
                     // If the key matches and it's not deleted, remove it
                     if !bucket.deleted && bucket.key.borrow() == key {
                         bucket.deleted = true;
@@ -360,7 +360,6 @@ where
             index = (index.saturating_add(step_size)) & (bucket_count.saturating_sub(1));
         }
 
-        // If we get here, we've probed all slots and couldn't find the key
         None
     }
 
@@ -432,6 +431,7 @@ where
 
     /// Returns the current load factor of the hash map
     #[must_use]
+    #[allow(clippy::arithmetic_side_effects, clippy::cast_precision_loss)]
     pub fn load_factor(&self) -> f64 {
         self.size as f64 / self.buckets.len() as f64
     }
@@ -453,7 +453,7 @@ impl<'a, K, V> Iterator for Iter<'a, K, V> {
 
     fn next(&mut self) -> Option<Self::Item> {
         while self.index < self.buckets.len() {
-            if let Some(bucket) = &self.buckets[self.index] {
+            if let Some(Some(bucket)) = self.buckets.get(self.index) {
                 self.index = self.index.saturating_add(1);
                 if !bucket.deleted {
                     return Some((&bucket.key, &bucket.value));

@@ -520,6 +520,7 @@ where
     }
 
     /// Returns the current load factor of the map
+    #[allow(clippy::arithmetic_side_effects, clippy::cast_precision_loss)]
     pub fn load_factor(&self) -> f64 {
         // This is only used for informational purposes, so the precision loss is acceptable
         let size = self.size.load(Ordering::Relaxed);
@@ -535,6 +536,7 @@ where
     }
 
     /// Inserts a key-value pair into the map
+    #[allow(clippy::arithmetic_side_effects, clippy::cast_precision_loss)]
     pub fn insert(&self, key: K, value: V) -> Option<V> {
         // Check if we need to resize - use a relaxed load since this is just a hint
         let size = self.size.load(Ordering::Relaxed);
