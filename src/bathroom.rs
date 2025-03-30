@@ -16,17 +16,22 @@ where
     V: Clone,
 {
     pub fn new() -> Self {
-        Self { items: vec![None], size: 0 }
+        Self::new_with_capacity(100)
+    }
+
+    fn new_with_capacity(capacity: usize) -> Self {
+        Self { items: vec![None; capacity], size: 0 }
     }
 
     pub fn insert(&mut self, k: K, v: V) {
-        // TODO make a resizing based on the load factor.
-        // (The ratio of the number of occupied slots to the total number of slots in the table)
-        self.resize();
-        let mut index = self.get_index(&k);
+        /// Load factor threshold
+        const LOAD_FACTOR_THRESHOLD: usize = 80;
+        if self.load_factor() > LOAD_FACTOR_THRESHOLD {
+            self.resize();
+        }
 
+        let mut index = self.get_index(&k);
         let table_size = self.items.len();
-        assert!(index < table_size);
 
         // The step size used for probing, which is adjusted dynamically based on occupancy.
         let step_size: usize = 1;
@@ -37,7 +42,6 @@ where
             // the step size. If the number of consecutive occupied slots is below the
             // threshold, decrease the step size.
             index = (index + step_size) % table_size;
-            println!("new index {index}");
         }
         // Found an empty slot, inserting the value
         self.items[index] = Some((k, v));
@@ -57,7 +61,6 @@ where
             }
             // `index` adjusment, must be the same as for `insert` function
             index = (index + step_size) % table_size;
-            println!("new index {index}");
         }
 
         // Found nothing for the provided `k` value
@@ -73,7 +76,7 @@ where
         let table_size = self.items.len();
         // TODO use bitwise and operation instead of `%`
         #[allow(trivial_numeric_casts)]
-        if size_of::<usize>() > size_of::<u64>() {
+        let index = if size_of::<usize>() > size_of::<u64>() {
             // as we checked that size of the `u64` could not exceeds size of the `usize`, its safe
             // to cast `u64` to `usize` without any losses
             (hash as usize) % table_size
@@ -83,7 +86,17 @@ where
             // Also as final result cannot exceeds the `last_index` value which is origninall
             // `usize` type its also safe to cast back to `usize`
             (hash % (table_size as u64)) as usize
-        }
+        };
+        assert!(index < table_size);
+        index
+    }
+
+    /// Calculates a current load factor, as percentage (0-100).
+    /// The ratio of the number of occupied slots to the total number of slots in the table.
+    fn load_factor(&self) -> usize {
+        let load_factor = self.size * 100 / self.items.len();
+        assert!(load_factor <= 100);
+        load_factor
     }
 
     /// Resizes the hash table when it gets too full
@@ -91,7 +104,12 @@ where
         assert_ne!(self.items.len(), 0);
         let new_capacity = self.items.len() * 2;
         assert!(new_capacity > self.items.len());
-        self.items.resize(new_capacity, None);
+        let mut new_table = Self::new_with_capacity(new_capacity);
+        let filtered_iter = std::mem::take(&mut self.items).into_iter().filter_map(|b| b);
+        for (k, v) in filtered_iter {
+            new_table.insert(k, v);
+        }
+        *self = new_table;
     }
 }
 
@@ -119,7 +137,6 @@ mod tests {
             map.insert(k, v);
         }
         for (k, v) in values {
-            println!("k {k}, v {v}");
             assert_eq!(map.get(&k), Some(&v));
         }
     }
