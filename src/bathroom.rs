@@ -27,12 +27,17 @@ where
         /// Load factor threshold
         const LOAD_FACTOR_THRESHOLD: usize = 80;
         if self.load_factor() > LOAD_FACTOR_THRESHOLD {
-            self.resize();
+            // double
+            self.resize(2);
         }
 
-        let mut index = self.get_index(&k);
-        let table_size = self.items.len();
+        self.insert_impl(k, v);
+    }
 
+    fn insert_impl(&mut self, k: K, v: V) {
+        let mut index = self.get_index(&k);
+
+        let table_size = self.items.len();
         // The step size used for probing, which is adjusted dynamically based on occupancy.
         let step_size: usize = 1;
         while let Some(_) = self.items[index] {
@@ -100,14 +105,15 @@ where
     }
 
     /// Resizes the hash table when it gets too full
-    fn resize(&mut self) {
+    fn resize(&mut self, resize_multiplier: usize) {
         assert_ne!(self.items.len(), 0);
-        let new_capacity = self.items.len() * 2;
+        assert_ne!(resize_multiplier, 0);
+        let new_capacity = self.items.len() * resize_multiplier;
         assert!(new_capacity > self.items.len());
         let mut new_table = Self::new_with_capacity(new_capacity);
         let filtered_iter = std::mem::take(&mut self.items).into_iter().filter_map(|b| b);
         for (k, v) in filtered_iter {
-            new_table.insert(k, v);
+            new_table.insert_impl(k, v);
         }
         *self = new_table;
     }
@@ -115,6 +121,8 @@ where
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
+
     use super::*;
     use proptest::property_test;
 
@@ -129,8 +137,24 @@ mod tests {
         assert_eq!(map.get(&"key2"), Some(&"value2"));
     }
 
+    #[test]
+    fn resize_check() {
+        let mut map = BathroomMap::new();
+        let init_size = map.items.len();
+
+        map.insert("key1", "value1");
+        map.insert("key2", "value2");
+        assert_eq!(map.items.len(), init_size);
+
+        map.resize(2);
+        assert_eq!(map.items.len(), init_size * 2);
+        assert_eq!(map.get(&"key1"), Some(&"value1"));
+        assert_eq!(map.get(&"key2"), Some(&"value2"));
+    }
+
     #[property_test]
-    fn bathroom_map_test(values: [(String, String); 2]) {
+    fn bathroom_map_test(values: [(String, String); 10]) {
+        let values: HashMap<_, _> = values.into_iter().collect();
         let mut map = BathroomMap::new();
 
         for (k, v) in values.clone() {
