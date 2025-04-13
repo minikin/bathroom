@@ -38,8 +38,7 @@
 //!
 //! ```rust
 //! use bathroom::ConcurrentElasticMap;
-//! use std::sync::Arc;
-//! use std::thread;
+//! use std::{sync::Arc, thread};
 //!
 //! // Create a shared hash map
 //! let map = Arc::new(ConcurrentElasticMap::new());
@@ -71,13 +70,10 @@
 //! assert!(count >= 190, "Expected at least 190 entries, found {}", count);
 //! ```
 
-/// Module implementing a thread-safe concurrent hash map with elastic probing
-mod concurrent_elastic_map;
 /// Module implementing a single-threaded hash map with elastic probing
 mod elastic_hashmap;
 /// Utility functions and traits for the hash maps
 mod utils;
 
-pub use concurrent_elastic_map::ConcurrentElasticMap;
 pub use elastic_hashmap::ElasticHashMap;
 pub use utils::HashMapExtensions;
