@@ -16,7 +16,15 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    - name: Build
-      run: cargo build --verbose
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: nightly
+        components: rustfmt, clippy
+    - name: Install deps
+      run: sudo apt-get install libfontconfig1-dev
+    - name: Run fmt
+      run: cargo +nightly fmt --check
+    - name: Clippy
+      run: cargo clippy --all-targets
     - name: Run tests
-      run: cargo test --verbose
+      run: cargo test
