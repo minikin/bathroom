@@ -123,6 +123,7 @@ fn bathroom_model(table: &mut Vec<Option<usize>>, key: usize) -> usize {
     probes
 }
 
+#[allow(clippy::unwrap_used, clippy::panic)]
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Generate load factors from 0.1 to 0.95
     let load_factors: Vec<f64> = (0..NUM_LOAD_FACTORS)
