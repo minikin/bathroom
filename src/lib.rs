@@ -5,7 +5,6 @@
 //! This crate provides two hash map implementations:
 //!
 //! - `ElasticHashMap`: A single-threaded implementation optimized for performance
-//! - `ConcurrentElasticMap`: A lock-free, thread-safe implementation for concurrent access
 //!
 //! Both implementations use an adaptive probing strategy that dynamically adjusts step
 //! sizes based on observed occupancy patterns, resulting in more efficient lookups.
@@ -33,43 +32,6 @@
 //! map.remove("apple");
 //! assert_eq!(map.get("apple"), None);
 //! ```
-//!
-//! ## Concurrent Usage
-//!
-//! ```rust
-//! use bathroom::ConcurrentElasticMap;
-//! use std::{sync::Arc, thread};
-//!
-//! // Create a shared hash map
-//! let map = Arc::new(ConcurrentElasticMap::new());
-//!
-//! // Clone references for different threads
-//! let map1 = Arc::clone(&map);
-//! let map2 = Arc::clone(&map);
-//!
-//! // Spawn threads that modify the map concurrently
-//! let t1 = thread::spawn(move || {
-//!     for i in 0..100 {
-//!         map1.insert(format!("key-{}", i), i);
-//!     }
-//! });
-//!
-//! let t2 = thread::spawn(move || {
-//!     for i in 100..200 {
-//!         map2.insert(format!("key-{}", i), i);
-//!     }
-//! });
-//!
-//! // Wait for threads to complete
-//! t1.join().unwrap();
-//! t2.join().unwrap();
-//!
-//! // Due to potential race conditions in a concurrent environment,
-//! // the final count might be slightly less than expected
-//! let count = map.len();
-//! assert!(count >= 190, "Expected at least 190 entries, found {}", count);
-//! ```
-
 /// Module implementing a single-threaded hash map with elastic probing
 mod elastic_hashmap;
 /// Utility functions and traits for the hash maps
