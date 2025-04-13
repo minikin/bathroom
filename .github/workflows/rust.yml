@@ -16,6 +16,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+    - name: Install deps
+      run: apt-get install libfontconfig1-dev
     - name: Run fmt
       run: cargo +nightly fmt --check
     - name: Clippy
