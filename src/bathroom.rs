@@ -1,7 +1,6 @@
 #![allow(
     missing_docs,
     clippy::missing_docs_in_private_items,
-    clippy::missing_panics_doc,
     clippy::cast_possible_truncation,
     clippy::arithmetic_side_effects,
     clippy::indexing_slicing
@@ -64,7 +63,7 @@ where
         let table_size = self.items.len();
         // The step size used for probing, which is adjusted dynamically based on occupancy.
         let step_size: usize = 1;
-        assert!(index < table_size);
+        debug_assert!(index < table_size);
         while self.items[index].is_some() {
             // TODO update `step_size` based on the occupancy threshold
             // (A threshold value that determines when to increase or decrease the step size).
@@ -81,7 +80,7 @@ where
     pub fn get(&self, k: &K) -> Option<&V> {
         let mut index = self.get_index(k);
         let table_size = self.items.len();
-        assert!(index < table_size);
+        debug_assert!(index < table_size);
 
         // The step size used for probing, which is adjusted dynamically based on occupancy.
         let step_size: usize = 1;
@@ -98,7 +97,7 @@ where
     }
 
     fn get_index(&self, k: &K) -> usize {
-        assert_ne!(self.items.len(), 0);
+        debug_assert_ne!(self.items.len(), 0);
 
         let mut hasher = DefaultHasher::new();
         k.hash(&mut hasher);
@@ -117,7 +116,7 @@ where
             // `usize` type its also safe to cast back to `usize`
             (hash % (table_size as u64)) as usize
         };
-        assert!(index < table_size);
+        debug_assert!(index < table_size);
         index
     }
 
@@ -125,16 +124,16 @@ where
     /// The ratio of the number of occupied slots to the total number of slots in the table.
     fn load_factor(&self) -> usize {
         let load_factor = self.size * 100 / self.items.len();
-        assert!(load_factor <= 100);
+        debug_assert!(load_factor <= 100);
         load_factor
     }
 
     /// Resizes the hash table when it gets too full
     fn resize(&mut self, resize_multiplier: usize) {
-        assert_ne!(self.items.len(), 0);
-        assert_ne!(resize_multiplier, 0);
+        debug_assert_ne!(self.items.len(), 0);
+        debug_assert_ne!(resize_multiplier, 0);
         let new_capacity = self.items.len() * resize_multiplier;
-        assert!(new_capacity > self.items.len());
+        debug_assert!(new_capacity > self.items.len());
         let mut new_table = Self::new_with_capacity(new_capacity);
         let filtered_iter = std::mem::take(&mut self.items).into_iter().flatten();
         for (k, v) in filtered_iter {
@@ -178,7 +177,7 @@ mod tests {
     }
 
     #[property_test]
-    fn bathroom_map_test(values: [(String, String); 10]) {
+    fn bathroom_map_test(values: [(String, String); 200]) {
         let values: HashMap<_, _> = values.into_iter().collect();
         let mut map = BathroomMap::new();
 
