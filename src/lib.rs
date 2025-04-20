@@ -32,10 +32,12 @@
 //! map.remove("apple");
 //! assert_eq!(map.get("apple"), None);
 //! ```
+mod bathroom;
 /// Module implementing a single-threaded hash map with elastic probing
 mod elastic_hashmap;
 /// Utility functions and traits for the hash maps
 mod utils;
 
+pub use bathroom::BathroomMap;
 pub use elastic_hashmap::ElasticHashMap;
 pub use utils::HashMapExtensions;

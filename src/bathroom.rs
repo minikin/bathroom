@@ -1,20 +1,38 @@
-#![allow(dead_code)]
+#![allow(
+    missing_docs,
+    clippy::missing_docs_in_private_items,
+    clippy::missing_panics_doc,
+    clippy::cast_possible_truncation,
+    clippy::arithmetic_side_effects,
+    clippy::indexing_slicing
+)]
 
 use std::hash::{DefaultHasher, Hash, Hasher};
 
 #[derive(Debug, Clone)]
-struct BathroomMap<K, V> {
+pub struct BathroomMap<K, V> {
     /// The stored items the key-value pairs
     items: Vec<Option<(K, V)>>,
     /// Current number of elements in the hash table
     size: usize,
 }
 
-impl<K, V> BathroomMap<K, V>
+impl<K, V> Default for BathroomMap<K, V>
 where
-    K: Clone + Hash + PartialEq,
+    K: Clone,
     V: Clone,
 {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<K, V> BathroomMap<K, V>
+where
+    K: Clone,
+    V: Clone,
+{
+    #[must_use]
     pub fn new() -> Self {
         Self::new_with_capacity(100)
     }
@@ -22,7 +40,13 @@ where
     fn new_with_capacity(capacity: usize) -> Self {
         Self { items: vec![None; capacity], size: 0 }
     }
+}
 
+impl<K, V> BathroomMap<K, V>
+where
+    K: Clone + Hash + PartialEq,
+    V: Clone,
+{
     pub fn insert(&mut self, k: K, v: V) {
         /// Load factor threshold
         const LOAD_FACTOR_THRESHOLD: usize = 80;
@@ -40,7 +64,8 @@ where
         let table_size = self.items.len();
         // The step size used for probing, which is adjusted dynamically based on occupancy.
         let step_size: usize = 1;
-        while let Some(_) = self.items[index] {
+        assert!(index < table_size);
+        while self.items[index].is_some() {
             // TODO update `step_size` based on the occupancy threshold
             // (A threshold value that determines when to increase or decrease the step size).
             // If the number of consecutive occupied slots exceeds the occupancy threshold, increase
@@ -54,7 +79,7 @@ where
     }
 
     pub fn get(&self, k: &K) -> Option<&V> {
-        let mut index = self.get_index(&k);
+        let mut index = self.get_index(k);
         let table_size = self.items.len();
         assert!(index < table_size);
 
@@ -111,7 +136,7 @@ where
         let new_capacity = self.items.len() * resize_multiplier;
         assert!(new_capacity > self.items.len());
         let mut new_table = Self::new_with_capacity(new_capacity);
-        let filtered_iter = std::mem::take(&mut self.items).into_iter().filter_map(|b| b);
+        let filtered_iter = std::mem::take(&mut self.items).into_iter().flatten();
         for (k, v) in filtered_iter {
             new_table.insert_impl(k, v);
         }
