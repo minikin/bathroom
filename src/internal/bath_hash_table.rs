@@ -123,6 +123,7 @@ fn bathroom_model(table: &mut Vec<Option<usize>>, key: usize) -> usize {
     probes
 }
 
+#[allow(clippy::unwrap_used, clippy::panic)]
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Generate load factors from 0.1 to 0.95
     let load_factors: Vec<f64> = (0..NUM_LOAD_FACTORS)
@@ -206,8 +207,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let max_avg = average_lookup_time
         .iter()
         .flat_map(|v| v.iter())
-        .fold(0.0, |max, &x| if x > max { x } else { max })
-        * 1.1; // Add 10% margin
+        .fold(0.0, |max, &x| if x > max { x } else { max }) *
+        1.1; // Add 10% margin
 
     let mut chart = ChartBuilder::on(&root)
         .caption("Comparison of Hash Table Lookup Efficiency", (font_family, title_size))
@@ -306,8 +307,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let max_worst = worst_case_probes
         .iter()
         .flat_map(|v| v.iter())
-        .fold(0, |max, &x| if x > max { x } else { max }) as f64
-        * 1.1; // Add 10% margin
+        .fold(0, |max, &x| if x > max { x } else { max }) as f64 *
+        1.1; // Add 10% margin
 
     let mut chart = ChartBuilder::on(&root)
         .caption("Comparison of Worst-Case Probing", (font_family, title_size))
@@ -401,8 +402,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let max_memory = memory_utilization
         .iter()
         .flat_map(|v| v.iter())
-        .fold(0, |max, &x| if x > max { x } else { max }) as f64
-        * 1.1; // Add 10% margin
+        .fold(0, |max, &x| if x > max { x } else { max }) as f64 *
+        1.1; // Add 10% margin
 
     let mut overall_chart = ChartBuilder::on(&areas[0])
         .caption("Overall Memory Utilization", (font_family, title_size))
@@ -467,14 +468,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .iter()
         .flat_map(|v| v[high_load_start..].iter())
         .fold(usize::MAX, |min, &x| if x < min { x } else { min })
-        as f64
-        * 0.995; // Slightly below the minimum
+        as f64 *
+        0.995; // Slightly below the minimum
 
     let max_memory_high_load = memory_utilization
         .iter()
         .flat_map(|v| v[high_load_start..].iter())
-        .fold(0, |max, &x| if x > max { x } else { max }) as f64
-        * 1.005; // Slightly above the maximum
+        .fold(0, |max, &x| if x > max { x } else { max }) as f64 *
+        1.005; // Slightly above the maximum
 
     let mut detailed_chart = ChartBuilder::on(&areas[1])
         .caption(

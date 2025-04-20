@@ -1,8 +1,10 @@
-use std::borrow::Borrow;
-use std::collections::hash_map::DefaultHasher;
-use std::hash::{Hash, Hasher};
-use std::marker::PhantomData;
-use std::mem;
+use std::{
+    borrow::Borrow,
+    collections::hash_map::DefaultHasher,
+    hash::{Hash, Hasher},
+    marker::PhantomData,
+    mem,
+};
 
 /// A bucket containing a key-value pair
 #[derive(Debug, Clone)]
@@ -104,8 +106,8 @@ where
     #[allow(clippy::arithmetic_side_effects, clippy::cast_precision_loss)]
     pub fn insert(&mut self, key: K, value: V) -> Option<V> {
         // Check if we need to resize
-        if (self.size as f64) / (self.buckets.len() as f64)
-            >= self.load_factor_threshold as f64 / 100.0
+        if (self.size as f64) / (self.buckets.len() as f64) >=
+            self.load_factor_threshold as f64 / 100.0
         {
             self.resize();
         }
@@ -172,7 +174,8 @@ where
                     } else {
                         consecutive_occupied = consecutive_occupied.saturating_add(1);
                         if consecutive_occupied > self.occupancy_threshold {
-                            // Increase step size exponentially when encountering many occupied slots
+                            // Increase step size exponentially when encountering many occupied
+                            // slots
                             step_size = (step_size.saturating_mul(2)).min(self.max_step_size);
                         }
                     }
@@ -231,7 +234,8 @@ where
                     } else {
                         consecutive_occupied = consecutive_occupied.saturating_add(1);
                         if consecutive_occupied > self.occupancy_threshold {
-                            // Increase step size exponentially when encountering many occupied slots
+                            // Increase step size exponentially when encountering many occupied
+                            // slots
                             step_size = (step_size.saturating_mul(2)).min(self.max_step_size);
                         }
                     }
@@ -349,7 +353,8 @@ where
                     } else {
                         consecutive_occupied = consecutive_occupied.saturating_add(1);
                         if consecutive_occupied > self.occupancy_threshold {
-                            // Increase step size exponentially when encountering many occupied slots
+                            // Increase step size exponentially when encountering many occupied
+                            // slots
                             step_size = (step_size.saturating_mul(2)).min(self.max_step_size);
                         }
                     }
