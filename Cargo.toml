@@ -14,6 +14,10 @@ license = "MIT OR Apache-2.0"
 name = "bath_hash_table"
 path = "src/internal/bath_hash_table.rs"
 
+[[bench]]
+name = "bathroom"
+harness = false
+
 [dependencies]
 rand = "0.9.0"
 plotters = "0.3.7"
